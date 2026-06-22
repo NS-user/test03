@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>今日の振り返り — 暗号大戦線の開発</title>
+<style>
+  :root{
+    --bg:#070b14; --panel:#0e1626; --panel2:#13203a; --line:#1d2f52;
+    --cyan:#2ad1ff; --cyanL:#9bf0ff; --red:#ff4d6d; --redL:#ffb3c2;
+    --gold:#ffd24a; --green:#46e08a; --purple:#b78aff;
+    --txt:#cfe3ff; --dim:#6f86ad;
+    --font:'Courier New',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);
+    line-height:1.8;-webkit-text-size-adjust:100%}
+  body{background:
+     radial-gradient(circle at 15% 0%,#0d1a36 0%,transparent 45%),
+     radial-gradient(circle at 90% 10%,#1a1030 0%,transparent 40%),
+     var(--bg);min-height:100vh}
+  .wrap{max-width:880px;margin:0 auto;padding:26px 18px 80px}
+
+  header.hero{text-align:center;padding:30px 14px 22px;border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg,rgba(20,32,58,.7),rgba(10,18,34,.5));margin-bottom:26px;
+    box-shadow:0 0 40px rgba(42,209,255,.08) inset}
+  header.hero .date{color:var(--gold);font-size:13px;letter-spacing:3px}
+  header.hero h1{margin:6px 0 4px;font-size:27px;letter-spacing:4px;color:var(--cyanL);
+    text-shadow:0 0 16px rgba(42,209,255,.5)}
+  header.hero .sub{color:var(--dim);font-size:12.5px;letter-spacing:1px}
+  header.hero .play{display:inline-block;margin-top:16px;padding:9px 22px;border:1px solid var(--cyan);
+    border-radius:8px;color:#eaf6ff;text-decoration:none;font-size:13px;letter-spacing:2px;
+    background:linear-gradient(180deg,#10408a,#0a2456);box-shadow:0 0 20px rgba(42,209,255,.25)}
+  header.hero .play:hover{background:linear-gradient(180deg,#1657b8,#0c2f72)}
+
+  section{margin:0 0 22px;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+  section > h2{margin:0;padding:13px 16px;font-size:15px;letter-spacing:2px;color:var(--cyanL);
+    background:linear-gradient(180deg,#13213c,#0e1626);border-bottom:1px solid var(--line);
+    display:flex;align-items:center;gap:10px}
+  section > h2 .n{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+    border:1px solid var(--cyan);border-radius:6px;font-size:12px;color:var(--cyan);flex:0 0 auto}
+  .body{padding:14px 16px}
+  p{margin:0 0 12px}
+  .dim{color:var(--dim)}
+  b.k{color:var(--gold)} b.c{color:var(--cyanL)} b.g{color:var(--green)} b.p{color:var(--purple)} b.r{color:var(--redL)}
+
+  /* タイムライン */
+  .timeline{list-style:none;margin:0;padding:0}
+  .timeline li{position:relative;padding:0 0 16px 26px;border-left:2px solid var(--line);margin-left:6px}
+  .timeline li:last-child{border-left-color:transparent}
+  .timeline li::before{content:"";position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:50%;
+    background:var(--cyan);box-shadow:0 0 10px var(--cyan)}
+  .timeline li .t{color:var(--cyanL);font-size:13.5px}
+  .timeline li .d{color:var(--dim);font-size:12px}
+
+  /* 技術カード */
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+  .card{border:1px solid var(--line);border-radius:10px;padding:12px;background:var(--panel2)}
+  .card h3{margin:0 0 6px;font-size:13.5px;color:var(--cyanL);display:flex;align-items:center;gap:7px}
+  .card .ic{font-size:16px}
+  .card p{font-size:12px;color:var(--dim);line-height:1.65;margin:0}
+  .card code{color:var(--green);background:#0a1326;padding:1px 5px;border-radius:4px;font-size:11px}
+
+  /* つまずき表 */
+  .trouble{display:flex;flex-direction:column;gap:10px}
+  .trouble .row{border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .trouble .p{padding:9px 12px;background:rgba(255,77,109,.08);border-bottom:1px solid var(--line);font-size:13px}
+  .trouble .p b{color:var(--redL)}
+  .trouble .s{padding:9px 12px;font-size:12.5px}
+  .trouble .s b{color:var(--green)}
+
+  /* 用語集 */
+  .gloss{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px 16px}
+  .gloss div{font-size:12.5px;color:var(--dim);padding:5px 0;border-bottom:1px dashed var(--line)}
+  .gloss div b{color:var(--cyanL)}
+
+  /* クイズ */
+  .quiz{display:flex;flex-direction:column;gap:12px}
+  .q{border:1px solid var(--line);border-radius:10px;background:var(--panel2);padding:12px 14px}
+  .q .qq{font-size:13.5px;color:var(--txt);margin-bottom:8px}
+  .q .qq b{color:var(--gold)}
+  .q button{font-family:var(--font);font-size:12px;letter-spacing:1px;padding:6px 14px;cursor:pointer;
+    background:#0a1326;color:var(--cyanL);border:1px solid var(--cyan);border-radius:6px}
+  .q button:hover{background:#10243f}
+  .q .a{display:none;margin-top:10px;padding:10px 12px;border-left:3px solid var(--green);
+    background:rgba(70,224,138,.07);border-radius:0 8px 8px 0;font-size:12.5px;color:var(--txt)}
+  .q.open .a{display:block}
+  .q.open button{opacity:.5}
+
+  /* 次の一手チェックリスト */
+  .next{list-style:none;margin:0;padding:0}
+  .next li{display:flex;gap:10px;align-items:flex-start;padding:7px 0;font-size:13px;border-bottom:1px dashed var(--line)}
+  .next li:last-child{border-bottom:none}
+  .next li .box{flex:0 0 auto;width:16px;height:16px;border:1px solid var(--cyan);border-radius:4px;margin-top:3px}
+
+  footer{text-align:center;color:var(--dim);font-size:11.5px;letter-spacing:1px;margin-top:30px}
+  footer a{color:var(--cyanL);text-decoration:none}
+  .progress{height:6px;background:#0a1326;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin:14px 0 4px}
+  .progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .4s}
+  .pmeta{font-size:11px;color:var(--dim);text-align:right}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="date">2026 / 06 / 22 ・ DAILY REVIEW</div>
+    <h1>今日の振り返り</h1>
+    <div class="sub">AI・電子戦・暗号戦のドット絵戦略ゲーム「暗号大戦線」を作って公開した日</div>
+    <a class="play" href="https://ns-user.github.io/test03/" target="_blank" rel="noopener">▶ 完成したゲームを開く</a>
+  </header>
+
+  <!-- 1. 今日やったこと -->
+  <section>
+    <h2><span class="n">1</span>今日やったことの流れ</h2>
+    <div class="body">
+      <ul class="timeline">
+        <li><div class="t">参考アプリを調査</div><div class="d">「成金大防衛 / 成金大作戦」を調べた。<b class="c">拠点を奪って資金を稼ぎ、ユニットを量産して敵首都を制圧するターン制戦略SLG</b>だと把握。</div></li>
+        <li><div class="t">テーマを再設計（リデザイン）</div><div class="d">同じ骨組みのまま、戦場をサイバー空間へ。<b class="c">AI戦・電子戦・暗号戦</b>をメカニクスに落とし込む方針を決定。</div></li>
+        <li><div class="t">ゲーム本体を実装</div><div class="d">依存ゼロの単一HTML。Canvasでドット絵、グリッド戦闘、敵AIまで作成。</div></li>
+        <li><div class="t">動作検証とバランス調整</div><div class="d">敵が増殖しすぎる問題を発見し、生産に上限と確率を追加。</div></li>
+        <li><div class="t">GitHub Pages で公開</div><div class="d">GitHub Actions で自動デプロイ。トークン権限の壁を越えてURL公開に成功。</div></li>
+        <li><div class="t">スマホ表示を修正</div><div class="d">マップが真っ黒になる不具合を、レスポンシブ対応（縦積みレイアウト）で解決。</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 2. 使った技術 -->
+  <section>
+    <h2><span class="n">2</span>使った技術・学んだ概念</h2>
+    <div class="body">
+      <div class="cards">
+        <div class="card"><h3><span class="ic">🎨</span>Canvas 2D ドット絵</h3><p>画像ファイルを使わず、<code>fillRect</code>で1ドットずつ描く<b class="c">プログラム生成スプライト</b>。色だけ差し替えて陣営を表現。</p></div>
+        <div class="card"><h3><span class="ic">🧭</span>BFS（幅優先探索）</h3><p>ユニットの<b class="c">移動可能範囲</b>を探索。地形ごとの移動コストや壁・敵ユニットを考慮して到達マスを計算。</p></div>
+        <div class="card"><h3><span class="ic">⚔️</span>戦闘計算と相性表</h3><p>攻撃力×HP割合×<b class="c">兵種相性</b>×地形防御でダメージを算出。反撃や撃破判定も。</p></div>
+        <div class="card"><h3><span class="ic">📡</span>電子戦（ジャミング）</h3><p>範囲内の敵の<b class="c">攻撃力と移動力を低下</b>。距離判定（チェビシェフ距離）で影響圏を表現。</p></div>
+        <div class="card"><h3><span class="ic">🔐</span>暗号戦（暗号化/復号）</h3><p>拠点に暗号レベルを持たせ、<b class="c">復号で占拠可能に</b>、暗号化で防御。勝利条件の核に。</p></div>
+        <div class="card"><h3><span class="ic">🤖</span>敵AI（ヒューリスティック）</h3><p>各ユニットが「<b class="c">攻撃で得な相手→拠点占拠→前進</b>」を評価して行動を選ぶ簡易思考。</p></div>
+        <div class="card"><h3><span class="ic">🚀</span>GitHub Pages + Actions</h3><p>プッシュで<b class="c">静的サイトを自動デプロイ</b>。<code>.github/workflows</code>のYAMLで定義。</p></div>
+        <div class="card"><h3><span class="ic">📱</span>レスポンシブCSS</h3><p><code>@media</code>で画面幅880px以下は<b class="c">縦積み</b>に。canvasを<code>max-width:100%</code>で画面幅にフィット。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. つまずき & 解決 -->
+  <section>
+    <h2><span class="n">3</span>つまずき と 解決（ここが学び）</h2>
+    <div class="body">
+      <div class="trouble">
+        <div class="row">
+          <div class="p"><b>問題:</b> 敵AIが毎ターン全拠点で生産し、5ターンで23体に増殖して手がつけられない。</div>
+          <div class="s"><b>解決:</b> 生産に<b>総数の上限</b>と<b>1拠点あたりの生産確率</b>を導入。盤面が溢れないよう調整した。</div>
+        </div>
+        <div class="row">
+          <div class="p"><b>問題:</b> GitHub Pagesの自動有効化が <code>Resource not accessible by integration</code> で失敗。</div>
+          <div class="s"><b>解決:</b> Actionsのトークンには<b>Pagesサイトを新規作成する権限がない</b>と判明。設定でPages(Source: GitHub Actions)を一度だけ手動で有効化 → デプロイ成功。</div>
+        </div>
+        <div class="row">
+          <div class="p"><b>問題:</b> スマホで開くとマップが真っ黒。</div>
+          <div class="s"><b>解決:</b> 横並び固定幅(660px)レイアウトのせいで、狭い画面だとcanvasが情報パネルに押し出され切れていた。<b>レスポンシブ対応</b>で縦積み＋幅フィットに修正。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. 理解度チェック -->
+  <section>
+    <h2><span class="n">4</span>理解度チェック（クイズ）</h2>
+    <div class="body">
+      <div class="progress"><i id="bar"></i></div>
+      <div class="pmeta"><span id="score">0</span> / 5 問オープン</div>
+      <div class="quiz" id="quiz">
+        <div class="q">
+          <div class="qq"><b>Q1.</b> 参考にした「成金大防衛」はどんなジャンルのゲーム？</div>
+          <button>答えを見る</button>
+          <div class="a">拠点を奪って資金を稼ぎ、ユニットを量産して敵の首都（全拠点）を制圧する <b class="c">ターン制の戦略シミュレーション</b>。今回はこの「拠点制圧→収入→生産」のループを下敷きにした。</div>
+        </div>
+        <div class="q">
+          <div class="qq"><b>Q2.</b> 「暗号大戦線」で敵中枢AI(KRONOS)を制圧するには何が必要？</div>
+          <button>答えを見る</button>
+          <div class="a">敵コアは3重に暗号化されているので、まず<b class="g">クラッカーで復号(暗号Lv3→0)</b>し、その後に<b class="c">ボットで占拠</b>する。暗号戦が勝利の核になっている。</div>
+        </div>
+        <div class="q">
+          <div class="qq"><b>Q3.</b> 電子戦機（ジャマー）の効果は？</div>
+          <button>答えを見る</button>
+          <div class="a">周囲の範囲内にいる<b class="r">敵の攻撃力と移動力を低下</b>させる。範囲判定にはチェビシェフ距離（縦横斜めを同じ1マスと数える）を使った。</div>
+        </div>
+        <div class="q">
+          <div class="qq"><b>Q4.</b> GitHub Pagesのデプロイが最初に失敗した原因は？</div>
+          <button>答えを見る</button>
+          <div class="a">ワークフローの <code>GITHUB_TOKEN</code> に<b class="r">Pagesサイトを新規作成（有効化）する権限がなかった</b>ため。設定画面でSourceを「GitHub Actions」にして一度だけ手動で有効化したら成功した。</div>
+        </div>
+        <div class="q">
+          <div class="qq"><b>Q5.</b> スマホでマップが真っ黒に見えたのはなぜ？どう直した？</div>
+          <button>答えを見る</button>
+          <div class="a">横並び・固定幅660pxのデスクトップ前提レイアウトで、狭い画面ではcanvasがサイドパネルに押し出されて切れていたから。<b class="g">@mediaで縦積みにし、canvasを画面幅にフィット</b>させて解決した。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. 用語集 -->
+  <section>
+    <h2><span class="n">5</span>キーワード復習</h2>
+    <div class="body">
+      <div class="gloss">
+        <div><b>ターン制ストラテジー</b>：自分と相手が交互に行動する戦略ゲーム形式。</div>
+        <div><b>タワーディフェンス</b>：拠点を守って攻め寄せる敵を防ぐジャンル。成金大防衛もこの系統。</div>
+        <div><b>ドット絵（ピクセルアート）</b>：四角いドットの集まりで描く絵。今回はコードで生成。</div>
+        <div><b>BFS</b>：幅優先探索。近いマスから順に広げて到達範囲・最短経路を求める。</div>
+        <div><b>チェビシェフ距離</b>：縦横斜めを同じ1歩と数える距離。範囲判定に使用。</div>
+        <div><b>ヒューリスティック</b>：最適解でなく「だいたい良い手」を選ぶ簡易ロジック。敵AIに採用。</div>
+        <div><b>CI/CD・GitHub Actions</b>：プッシュをきっかけに自動でビルド・公開する仕組み。</div>
+        <div><b>レスポンシブデザイン</b>：画面幅に応じてレイアウトを切り替える設計。<code>@media</code>で実装。</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. 次の一手 -->
+  <section>
+    <h2><span class="n">6</span>次にやれること</h2>
+    <div class="body">
+      <ul class="next">
+        <li><span class="box"></span><div>難易度・ユニットバランスの調整（コスト、攻撃力、敵AIの賢さ）。</div></li>
+        <li><span class="box"></span><div>マップを複数用意してステージ制にする。</div></li>
+        <li><span class="box"></span><div>スマホでマスが小さい問題への対応（ピンチズーム or マップスクロール）。</div></li>
+        <li><span class="box"></span><div>効果音・BGM、勝敗演出の強化。</div></li>
+        <li><span class="box"></span><div>セーブ機能（localStorage）で途中から再開できるように。</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    暗号大戦線 — CIPHER FRONT ／ 制作日 2026-06-22<br>
+    <a href="https://ns-user.github.io/test03/" target="_blank" rel="noopener">ゲームを遊ぶ</a> ・
+    <a href="https://github.com/NS-user/test03" target="_blank" rel="noopener">ソースコード(GitHub)</a>
+  </footer>
+</div>
+
+<script>
+  // クイズの開閉と進捗バー
+  const qs = Array.from(document.querySelectorAll('#quiz .q'));
+  const bar = document.getElementById('bar');
+  const score = document.getElementById('score');
+  let opened = 0;
+  qs.forEach(q=>{
+    const btn = q.querySelector('button');
+    btn.addEventListener('click', ()=>{
+      if(q.classList.contains('open')) return;
+      q.classList.add('open');
+      btn.textContent = '✓ 確認済み';
+      opened++;
+      score.textContent = opened;
+      bar.style.width = (opened/qs.length*100)+'%';
+    });
+  });
+  // チェックリストのトグル
+  document.querySelectorAll('.next li .box').forEach(b=>{
+    b.parentElement.style.cursor='pointer';
+    b.parentElement.addEventListener('click',()=>{
+      const on = b.style.background==='var(--green)';
+      b.style.background = on ? '' : 'var(--green)';
+      b.style.boxShadow = on ? '' : '0 0 8px var(--green)';
+    });
+  });
+</script>
+</body>
+</html>
