@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>暗号大戦線 — CIPHER FRONT</title>
+<style>
+  :root{
+    --bg:#070b14; --panel:#0e1626; --panel2:#13203a; --line:#1d2f52;
+    --cyan:#2ad1ff; --cyanL:#9bf0ff; --red:#ff4d6d; --redL:#ffb3c2;
+    --neutral:#8a93a8; --gold:#ffd24a; --green:#46e08a; --txt:#cfe3ff; --dim:#6f86ad;
+    --font:'Courier New',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:var(--font);overflow:hidden}
+  #wrap{display:flex;flex-direction:column;height:100vh;width:100vw}
+  header{display:flex;align-items:center;gap:18px;padding:6px 14px;background:linear-gradient(180deg,#0c1428,#070b14);border-bottom:1px solid var(--line);flex:0 0 auto}
+  header h1{font-size:17px;margin:0;letter-spacing:3px;color:var(--cyanL);text-shadow:0 0 8px rgba(42,209,255,.5)}
+  header h1 small{color:var(--dim);font-size:11px;letter-spacing:2px}
+  .stat{display:flex;flex-direction:column;line-height:1.15}
+  .stat b{font-size:15px}
+  .stat span{font-size:10px;color:var(--dim);letter-spacing:1px}
+  .cp-cyan b{color:var(--cyanL)} .cp-red b{color:var(--redL)}
+  .phase{margin-left:auto;padding:4px 12px;border:1px solid var(--line);border-radius:4px;font-size:12px;letter-spacing:2px}
+  .phase.player{color:var(--cyanL);border-color:#1f5d78;box-shadow:0 0 10px rgba(42,209,255,.25) inset}
+  .phase.enemy{color:var(--redL);border-color:#7a2236;box-shadow:0 0 10px rgba(255,77,109,.25) inset}
+  #main{display:flex;flex:1 1 auto;min-height:0}
+  #stage{position:relative;flex:1 1 auto;display:flex;align-items:center;justify-content:center;background:
+     radial-gradient(circle at 50% 40%,#0c1832 0%,#060912 70%);overflow:hidden}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 0 0 1px var(--line),0 8px 40px rgba(0,0,0,.6)}
+  #side{flex:0 0 268px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .sectitle{font-size:10px;letter-spacing:3px;color:var(--dim);padding:8px 12px 4px;border-bottom:1px solid var(--line)}
+  #inspect{padding:10px 12px;min-height:128px;border-bottom:1px solid var(--line)}
+  #inspect .uname{font-size:14px;letter-spacing:1px}
+  #inspect .row{display:flex;justify-content:space-between;font-size:11px;color:var(--dim);margin-top:3px}
+  #inspect .row b{color:var(--txt)}
+  .hpbar{height:7px;background:#091222;border:1px solid var(--line);border-radius:3px;margin-top:6px;overflow:hidden}
+  .hpbar i{display:block;height:100%;background:linear-gradient(90deg,#46e08a,#bfff5e)}
+  .tag{display:inline-block;font-size:9px;padding:1px 5px;border:1px solid var(--line);border-radius:3px;color:var(--dim);margin:4px 4px 0 0}
+  #build{flex:1 1 auto;overflow:auto;padding:6px 10px 12px}
+  .bcard{display:flex;gap:8px;align-items:center;padding:6px;border:1px solid var(--line);border-radius:5px;margin-top:7px;cursor:pointer;background:var(--panel2);transition:.12s}
+  .bcard:hover{border-color:var(--cyan);box-shadow:0 0 10px rgba(42,209,255,.2)}
+  .bcard.dis{opacity:.4;cursor:not-allowed;filter:grayscale(.6)}
+  .bcard canvas{box-shadow:none;background:#0a1326;border-radius:4px}
+  .bcard .bi{flex:1}
+  .bcard .bn{font-size:12px;color:var(--cyanL)}
+  .bcard .bd{font-size:9px;color:var(--dim);line-height:1.25}
+  .bcard .bc{font-size:12px;color:var(--gold);white-space:nowrap}
+  #log{flex:0 0 150px;overflow:auto;padding:6px 10px;font-size:11px;line-height:1.5;border-top:1px solid var(--line);background:#0a1120}
+  #log div{opacity:.95}
+  #log .sys{color:var(--dim)} #log .you{color:var(--cyanL)} #log .foe{color:var(--redL)}
+  #log .ew{color:var(--gold)} #log .cr{color:var(--green)}
+  footer{flex:0 0 auto;display:flex;gap:8px;padding:8px 12px;background:var(--panel);border-top:1px solid var(--line);align-items:center}
+  button.act{font-family:var(--font);font-size:12px;letter-spacing:1px;padding:7px 14px;background:var(--panel2);color:var(--txt);border:1px solid var(--line);border-radius:5px;cursor:pointer}
+  button.act:hover{border-color:var(--cyan);color:var(--cyanL)}
+  button.act.warn{border-color:#7a2236;color:var(--redL)}
+  button.act:disabled{opacity:.4;cursor:not-allowed}
+  .hint{margin-left:auto;font-size:11px;color:var(--dim)}
+  /* overlay screens */
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+     background:radial-gradient(circle at 50% 40%,rgba(10,22,46,.96),rgba(4,7,16,.99));z-index:20;text-align:center;padding:24px}
+  .screen h2{font-size:34px;letter-spacing:8px;margin:0 0 6px;color:var(--cyanL);text-shadow:0 0 16px rgba(42,209,255,.6)}
+  .screen .sub{color:var(--dim);font-size:13px;letter-spacing:2px;margin-bottom:18px}
+  .screen p{max-width:560px;font-size:12.5px;line-height:1.9;color:var(--txt)}
+  .screen .k{color:var(--gold)} .screen .c{color:var(--cyanL)} .screen .g{color:var(--green)} .screen .r{color:var(--redL)}
+  .screen button{margin-top:22px;font-family:var(--font);font-size:15px;letter-spacing:4px;padding:12px 34px;
+     background:linear-gradient(180deg,#10408a,#0a2456);color:#eaf6ff;border:1px solid var(--cyan);border-radius:6px;cursor:pointer;
+     box-shadow:0 0 22px rgba(42,209,255,.3)}
+  .screen button:hover{background:linear-gradient(180deg,#1657b8,#0c2f72)}
+  .screen.win h2{color:var(--green);text-shadow:0 0 16px rgba(70,224,138,.6)}
+  .screen.lose h2{color:var(--redL);text-shadow:0 0 16px rgba(255,77,109,.6)}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 14px;max-width:600px;justify-content:center;margin-top:8px;font-size:11px;color:var(--dim)}
+  .hidden{display:none!important}
+  ::-webkit-scrollbar{width:9px;height:9px}
+  ::-webkit-scrollbar-thumb{background:#1d2f52;border-radius:4px}
+  ::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <header>
+    <h1>暗号大戦線 <small>CIPHER&nbsp;FRONT</small></h1>
+    <div class="stat cp-cyan"><b id="cpYou">0</b><span>自軍 演算CP</span></div>
+    <div class="stat cp-red"><b id="cpFoe">0</b><span>敵AI CP</span></div>
+    <div class="stat"><b id="turnNo">1</b><span>ターン</span></div>
+    <div class="phase player" id="phase">自軍フェイズ</div>
+  </header>
+
+  <div id="main">
+    <div id="stage">
+      <canvas id="cv" width="660" height="484"></canvas>
+
+      <!-- TITLE -->
+      <div class="screen" id="titleScreen">
+        <h2>暗号大戦線</h2>
+        <div class="sub">C I P H E R &nbsp; F R O N T &nbsp;/&nbsp; AI・電子戦・暗号戦の電脳ターン制ストラテジー</div>
+        <p>
+          西暦20XX、戦場はネットワークへ移った。<br>
+          君は青の<span class="c">自律防衛AI</span>を指揮し、ネットワーク上の<span class="c">サーバー拠点</span>を奪って
+          演算リソース<span class="k">CP</span>を稼ぎ、ユニットを量産する。<br><br>
+          勝利条件は敵中枢AI <span class="r">「KRONOS」</span> の制圧。だが敵コアは三重に<span class="g">暗号化</span>されている。
+          <span class="g">クラッカー</span>で<b>復号(ハッキング)</b>してから<span class="c">ボット</span>で占拠せよ。<br>
+          <span class="k">電子戦機</span>で敵の機動を妨害し、<span class="g">暗号化</span>で自拠点を守れ。
+        </p>
+        <div class="legend">
+          <span>■ <span style="color:var(--cyanL)">青=自軍</span></span>
+          <span>■ <span style="color:var(--redL)">赤=敵AI</span></span>
+          <span>■ <span style="color:var(--neutral)">灰=中立拠点</span></span>
+          <span>◈ 拠点=CP+生産</span>
+          <span>▦ ファイアウォール=侵入不可</span>
+          <span>※ 中継ノード=防御+</span>
+        </div>
+        <button onclick="Game.start()">▶ 作戦開始</button>
+      </div>
+
+      <!-- END -->
+      <div class="screen hidden" id="endScreen">
+        <h2 id="endTitle"></h2>
+        <div class="sub" id="endSub"></div>
+        <p id="endMsg"></p>
+        <button onclick="Game.start()">▶ もう一度</button>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="sectitle">ユニット情報</div>
+      <div id="inspect"><div style="color:var(--dim);font-size:11px">ユニット / 拠点をクリックして選択</div></div>
+      <div class="sectitle" id="buildTitle">生産 (拠点を選択)</div>
+      <div id="build"></div>
+      <div id="log"></div>
+    </div>
+  </div>
+
+  <footer>
+    <button class="act" id="btnDecrypt" onclick="Game.uiAction('decrypt')">復号</button>
+    <button class="act" id="btnEncrypt" onclick="Game.uiAction('encrypt')">暗号化</button>
+    <button class="act" id="btnCapture" onclick="Game.uiAction('capture')">占拠</button>
+    <button class="act" id="btnWait" onclick="Game.uiAction('wait')">待機</button>
+    <button class="act warn" id="btnEnd" onclick="Game.endTurn()">ターン終了 ▶</button>
+    <span class="hint" id="hint">左クリック: 選択 / 移動先 / 攻撃</span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+/* =========================================================================
+   暗号大戦線 — CIPHER FRONT
+   依存ゼロ・単一ファイルのターン制グリッド戦略ゲーム
+   テーマ: AI戦 / 電子戦(ジャミング) / 暗号戦(暗号化・復号)
+   ========================================================================= */
+
+const TS = 44;                 // タイルサイズ(px)
+const COLS = 15, ROWS = 11;    // マップ寸法
+
+/* ---- 陣営カラーパレット ---- */
+const PAL = {
+  you:   {main:'#2ad1ff', light:'#9bf0ff', dark:'#0c3a52'},
+  foe:   {main:'#ff4d6d', light:'#ffb3c2', dark:'#5a1626'},
+  neutral:{main:'#8a93a8', light:'#c2cad8', dark:'#2c3346'},
+};
+
+/* ---- 地形 ---- */
+const TERRAIN = {
+  net:   {name:'ネット平地', cost:1, def:0,  base:'#0c1730', grid:'#16264a'},
+  relay: {name:'中継ノード', cost:2, def:20, base:'#13243f', grid:'#27406b'},
+  wall:  {name:'ファイアウォール', cost:99, def:0, base:'#321a26', grid:'#5a2a3c', block:true},
+  node:  {name:'サーバー拠点', cost:1, def:15, base:'#10203c', grid:'#214a78', isNode:true, income:100},
+  core:  {name:'中枢コア', cost:1, def:30, base:'#1a2a52', grid:'#3a5db0', isNode:true, income:200, isCore:true},
+};
+
+/* ---- ユニット定義 ---- */
+/* type相性: soft / armor / cyber / air / support */
+const UNITS = {
+  bot:     {name:'ボット',     cls:'soft',    cost:100, hp:100, atk:35, rng:1, mov:3, cap:true,  fly:false,
+            desc:'安価な歩兵型。拠点を占拠できる主力。'},
+  worm:    {name:'ワーム',     cls:'soft',    cost:250, hp:100, atk:55, rng:1, mov:5, cap:false, fly:false,
+            desc:'高機動の自己増殖プログラム。一撃離脱で支援機を狩る。'},
+  firewall:{name:'ファイアウォール', cls:'armor', cost:340, hp:150, atk:55, rng:1, mov:2, cap:false, fly:false,
+            desc:'重装甲の防壁。中継ノードに置けば鉄壁。'},
+  jammer:  {name:'電子戦機',   cls:'support', cost:300, hp:90,  atk:30, rng:2, mov:3, cap:false, fly:false,
+            ew:2, desc:'電子戦: 周囲2マスの敵の攻撃力と機動を低下させる。'},
+  cracker: {name:'クラッカー', cls:'cyber',   cost:320, hp:90,  atk:45, rng:2, mov:3, cap:false, fly:false,
+            crypto:true, desc:'暗号戦: 敵拠点を復号し、自拠点を暗号化する。'},
+  drone:   {name:'AIドローン', cls:'air',     cost:520, hp:110, atk:75, rng:1, mov:5, cap:false, fly:true,
+            desc:'自律AI機。地形・壁を無視して飛行する切り札。'},
+};
+const BUILD_ORDER = ['bot','worm','firewall','jammer','cracker','drone'];
+
+/* 攻撃相性(攻撃側cls -> 防御側cls): 乗算 */
+const MATCH = {
+  soft:   {soft:1.0, armor:0.6, cyber:1.2, air:0.7, support:1.4},
+  armor:  {soft:1.3, armor:1.0, cyber:1.0, air:0.7, support:1.2},
+  cyber:  {soft:0.9, armor:1.4, cyber:1.0, air:0.8, support:1.1},
+  air:    {soft:1.4, armor:1.1, cyber:1.3, air:1.0, support:1.5},
+  support:{soft:0.9, armor:0.6, cyber:0.9, air:0.7, support:1.0},
+};
+
+/* ---- マップ定義 (15x11) ---- *
+  記号: . net  r relay  # wall  n 中立node  N 自軍node  E 敵node  C 自軍core  K 敵core */
+const MAP = [
+  "K.E..#.....r..n",
+  "..r....n....r..",
+  ".n...#...#....E",
+  "..r.........r..",
+  "r...n.....n...r",
+  "#......r......#",
+  "r...n.....n...r",
+  "..r.........r..",
+  "N....#...#....n",
+  "..r....n....r..",
+  "n..r.....#.N..C",
+];
+
+/* 初期配置ユニット [x,y,type,owner] */
+const START_UNITS = [
+  // 自軍(右下)
+  [14,10,'bot','you'],[13,10,'worm','you'],[14,9,'bot','you'],[11,10,'cracker','you'],[0,8,'bot','you'],
+  // 敵AI(左上)
+  [0,0,'bot','foe'],[1,0,'worm','foe'],[2,0,'bot','foe'],[3,1,'cracker','foe'],[14,2,'bot','foe'],
+];
+
+/* ===================== 状態 ===================== */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+let S = null;          // game state
+let anim = {t:0, floats:[], fx:[]};
+
+function key(x,y){return y*COLS+x;}
+function inB(x,y){return x>=0&&y>=0&&x<COLS&&y<ROWS;}
+function dist(a,b){return Math.max(Math.abs(a.x-b.x),Math.abs(a.y-b.y));} // Chebyshev
+function man(a,b){return Math.abs(a.x-b.x)+Math.abs(a.y-b.y);}            // Manhattan
+
+/* ===================== 初期化 ===================== */
+function buildState(){
+  const tiles=[], units=[];
+  for(let y=0;y<ROWS;y++){
+    for(let x=0;x<COLS;x++){
+      const ch=MAP[y][x];
+      let t='net', owner=null, enc=0, cap=20;
+      if(ch==='.')t='net';
+      else if(ch==='r')t='relay';
+      else if(ch==='#')t='wall';
+      else if(ch==='n'){t='node';owner=null;}
+      else if(ch==='N'){t='node';owner='you';}
+      else if(ch==='E'){t='node';owner='foe';}
+      else if(ch==='C'){t='core';owner='you';}
+      else if(ch==='K'){t='core';owner='foe';enc=3;} // 敵コアは三重暗号
+      tiles.push({x,y,t,owner,enc,cap, capBy:null});
+    }
+  }
+  let uid=1;
+  for(const [x,y,type,owner] of START_UNITS){
+    units.push(mkUnit(uid++,type,owner,x,y));
+  }
+  return {
+    tiles, units, uid,
+    turn:1, phase:'you',
+    cp:{you:450, foe:450},
+    sel:null,          // 選択中ユニット
+    reach:null,        // 到達可能マップ {key->cost}
+    atkTiles:null,     // 攻撃可能タイル set
+    pendUnit:null,     // 移動確定待ち（行動メニュー表示中）
+    buildTile:null,    // 生産対象タイル
+    busy:false, over:false,
+  };
+}
+function mkUnit(id,type,owner,x,y){
+  const d=UNITS[type];
+  return {id,type,owner,x,y,hp:d.hp,maxHp:d.hp,moved:false,acted:false,fresh:true};
+}
+function tileAt(x,y){return S.tiles[key(x,y)];}
+function unitAt(x,y){return S.units.find(u=>u.x===x&&u.y===y&&u.hp>0);}
+
+/* ===================== ログ ===================== */
+function log(msg,cls='sys'){
+  const el=document.getElementById('log');
+  const d=document.createElement('div');
+  d.className=cls; d.innerHTML=msg;
+  el.appendChild(d);
+  el.scrollTop=el.scrollHeight;
+  while(el.children.length>120) el.removeChild(el.firstChild);
+}
+
+/* ===================== 電子戦(ジャミング) ===================== */
+// あるユニットが敵の電子戦機の影響下にあるか
+function isJammed(u){
+  for(const j of S.units){
+    if(j.hp<=0||j.owner===u.owner) continue;
+    const d=UNITS[j.type];
+    if(d.ew && dist(j,u)<=d.ew) return true;
+  }
+  return false;
+}
+// 描画用: 全ジャミングセルを集合で
+function jamCells(forOwner){ // forOwner視点で「敵」のジャマー範囲
+  const set=new Set();
+  for(const j of S.units){
+    if(j.hp<=0||j.owner===forOwner) continue;
+    const d=UNITS[j.type]; if(!d.ew) continue;
+    for(let dy=-d.ew;dy<=d.ew;dy++)for(let dx=-d.ew;dx<=d.ew;dx++){
+      const x=j.x+dx,y=j.y+dy;
+      if(inB(x,y)&&Math.max(Math.abs(dx),Math.abs(dy))<=d.ew) set.add(key(x,y));
+    }
+  }
+  return set;
+}
+
+/* ===================== 移動範囲(BFS) ===================== */
+function computeReach(u){
+  const d=UNITS[u.type];
+  let mov=d.mov;
+  if(isJammed(u)) mov=Math.max(1,mov-2); // 電子戦で機動低下
+  const reach={}; reach[key(u.x,u.y)]=0;
+  const q=[{x:u.x,y:u.y,c:0}];
+  while(q.length){
+    const cur=q.shift();
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=cur.x+dx, ny=cur.y+dy;
+      if(!inB(nx,ny)) continue;
+      const t=tileAt(nx,ny);
+      let cost = d.fly?1:TERRAIN[t.t].cost;
+      if(!d.fly && TERRAIN[t.t].block) continue;   // 壁
+      const occ=unitAt(nx,ny);
+      if(occ && occ.owner!==u.owner) continue;       // 敵で進入不可
+      const nc=cur.c+cost;
+      if(nc>mov) continue;
+      if(reach[key(nx,ny)]===undefined || nc<reach[key(nx,ny)]){
+        reach[key(nx,ny)]=nc;
+        q.push({x:nx,y:ny,c:nc});
+      }
+    }
+  }
+  // 自分以外のユニットがいるマスは「停止不可」(通過のみ)
+  for(const k in reach){
+    const x=+k%COLS, y=(+k/COLS)|0;
+    const occ=unitAt(x,y);
+    if(occ && occ!==u) delete reach[k];
+  }
+  return reach;
+}
+// 経路復元(アニメ用) — reach上を最短でたどる簡易版
+function pathTo(u,tx,ty,reach){
+  const d=UNITS[u.type];
+  // ダイクストラ風に親を辿る
+  const prev={}; const start=key(u.x,u.y);
+  const seen={[start]:0}; const pq=[{x:u.x,y:u.y,c:0}];
+  while(pq.length){
+    pq.sort((a,b)=>a.c-b.c);
+    const cur=pq.shift();
+    if(cur.x===tx&&cur.y===ty) break;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nx=cur.x+dx,ny=cur.y+dy;
+      if(!inB(nx,ny))continue;
+      const t=tileAt(nx,ny);
+      if(!d.fly&&TERRAIN[t.t].block)continue;
+      const occ=unitAt(nx,ny);
+      if(occ&&occ.owner!==u.owner)continue;
+      const cost=d.fly?1:TERRAIN[t.t].cost;
+      const nc=cur.c+cost;
+      if(reach[key(nx,ny)]===undefined)continue;
+      if(seen[key(nx,ny)]===undefined||nc<seen[key(nx,ny)]){
+        seen[key(nx,ny)]=nc; prev[key(nx,ny)]={x:cur.x,y:cur.y};
+        pq.push({x:nx,y:ny,c:nc});
+      }
+    }
+  }
+  const path=[]; let ck=key(tx,ty);
+  if(seen[ck]===undefined && !(tx===u.x&&ty===u.y)) return [{x:tx,y:ty}];
+  while(ck!==start){ const x=+ck%COLS,y=(+ck/COLS)|0; path.unshift({x,y}); const p=prev[ck]; if(!p)break; ck=key(p.x,p.y);}
+  return path;
+}
+
+/* 攻撃可能タイル: 移動後位置から射程内に敵がいるか */
+function computeAttackTiles(u){
+  const d=UNITS[u.type];
+  const set=new Set();
+  for(const e of S.units){
+    if(e.hp<=0||e.owner===u.owner)continue;
+    // uが現在位置から射程内に居るとき(移動0)も含め、reach各点から到達できるか
+    for(const k in S.reach){
+      const x=+k%COLS,y=(+k/COLS)|0;
+      if(unitAt(x,y)&&!(x===u.x&&y===u.y))continue; // 停止できる必要
+      if(Math.max(Math.abs(x-e.x),Math.abs(y-e.y))<=d.rng && man({x,y},e)<=d.rng+(d.rng>1?0:0)){
+        // 射程はチェビシェフでなくマンハッタン基準に統一
+      }
+    }
+  }
+  return set; // (未使用: 攻撃判定はクリック時に都度算出)
+}
+
+/* ===================== 戦闘 ===================== */
+function rangeOf(u){return UNITS[u.type].rng;}
+function canHit(att, fromX, fromY, def){
+  return man({x:fromX,y:fromY}, def) <= rangeOf(att);
+}
+function damage(att, def){
+  const ad=UNITS[att.type], dd=UNITS[def.type];
+  const t=tileAt(def.x,def.y);
+  let base = ad.atk * (att.hp/att.maxHp);
+  base *= (MATCH[ad.cls][dd.cls]||1);
+  if(isJammed(att)) base*=0.65;                 // 電子戦で攻撃力低下
+  base *= (1 - TERRAIN[t.t].def/100);           // 地形防御
+  base *= (0.9 + Math.random()*0.2);
+  return Math.max(5, Math.round(base));
+}
+function doAttack(att, def){
+  // 攻撃
+  const dmg=damage(att,def);
+  def.hp-=dmg;
+  spawnFloat(def.x,def.y,'-'+dmg, def.owner==='you'?'#ff8aa0':'#ffe08a');
+  spawnFx(att.x,att.y,def.x,def.y);
+  if(def.hp<=0){
+    def.hp=0;
+    log(`${ownTag(att.owner)} ${UNITS[att.type].name} が ${UNITS[def.type].name} を撃破`, att.owner==='you'?'you':'foe');
+    return;
+  }
+  log(`${UNITS[att.type].name}→${UNITS[def.type].name} に ${dmg} ダメージ`, att.owner==='you'?'you':'foe');
+  // 反撃(射程内かつ生存)
+  if(man(att,def)<=rangeOf(def) && rangeOf(def)>=man(att,def)){
+    if(man(att,def)<=rangeOf(def)){
+      const cdmg=damage(def,att);
+      att.hp-=cdmg;
+      spawnFloat(att.x,att.y,'-'+cdmg, att.owner==='you'?'#ff8aa0':'#ffe08a');
+      if(att.hp<=0){att.hp=0; log(`反撃で ${UNITS[att.type].name} 撃破`, def.owner==='you'?'you':'foe');}
+    }
+  }
+}
+
+/* ===================== 占拠 / 暗号 ===================== */
+function captureTile(u){
+  const t=tileAt(u.x,u.y);
+  if(!TERRAIN[t.t].isNode || t.owner===u.owner) return false;
+  if(t.enc>0){ log(`占拠失敗: 拠点は暗号化(Lv${t.enc})されている。先に復号せよ`, 'cr'); return false;}
+  const amt=Math.max(4, Math.round(u.hp/10*2));
+  if(t.capBy!==u.owner){ t.cap=20; t.capBy=u.owner; } // 別陣営が占拠開始でリセット
+  t.cap-=amt;
+  if(t.cap<=0){
+    t.owner=u.owner; t.cap=20; t.capBy=null;
+    log(`${ownTag(u.owner)} ${TERRAIN[t.t].name} を制圧！`, u.owner==='you'?'you':'foe');
+    if(TERRAIN[t.t].isCore){ endGame(u.owner==='you'); }
+    return true;
+  }
+  log(`占拠中… 残り ${t.cap}/20 (${TERRAIN[t.t].name})`, u.owner==='you'?'you':'foe');
+  return true;
+}
+function decryptAdjacent(u){
+  // 隣接する敵/中立拠点(enc>0)を1段階復号
+  let done=false;
+  for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){
+    const t=tileAt(u.x+dx,u.y+dy);
+    if(t&&TERRAIN[t.t].isNode&&t.owner!==u.owner&&t.enc>0){
+      t.enc--; done=true;
+      log(`${ownTag(u.owner)} 復号成功！ ${TERRAIN[t.t].name} 暗号Lv→${t.enc}`, 'cr');
+      spawnFloat(t.x,t.y,'DECRYPT','#46e08a');
+      break;
+    }
+  }
+  if(!done) log('復号できる暗号化拠点が隣接していない','sys');
+  return done;
+}
+function encryptAdjacent(u){
+  // 隣接する自拠点を暗号化(最大3)
+  let done=false;
+  for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){
+    const t=tileAt(u.x+dx,u.y+dy);
+    if(t&&TERRAIN[t.t].isNode&&t.owner===u.owner&&t.enc<3){
+      t.enc++; done=true;
+      log(`${ownTag(u.owner)} ${TERRAIN[t.t].name} を暗号化 Lv→${t.enc}`, 'cr');
+      spawnFloat(t.x,t.y,'ENCRYPT','#9bf0ff');
+      break;
+    }
+  }
+  if(!done) log('暗号化できる自拠点が隣接していない','sys');
+  return done;
+}
+function ownTag(o){return o==='you'?'<span style="color:#9bf0ff">[自軍]</span>':'<span style="color:#ffb3c2">[敵AI]</span>';}
+
+/* ===================== 収入 ===================== */
+function income(owner){
+  let sum=0;
+  for(const t of S.tiles) if(t.owner===owner && TERRAIN[t.t].isNode) sum+=TERRAIN[t.t].income;
+  return sum;
+}
+function countNodes(owner){return S.tiles.filter(t=>t.owner===owner&&TERRAIN[t.t].isNode).length;}
+
+/* ===================== ターン制御 ===================== */
+function startPhase(owner){
+  S.phase=owner;
+  // 収入
+  const inc=income(owner);
+  S.cp[owner]+=inc;
+  // ユニット回復(自拠点上) & 行動リセット
+  for(const u of S.units){
+    if(u.owner!==owner||u.hp<=0)continue;
+    u.moved=false;u.acted=false;u.fresh=false;
+    const t=tileAt(u.x,u.y);
+    if(TERRAIN[t.t].isNode&&t.owner===owner&&u.hp<u.maxHp){
+      u.hp=Math.min(u.maxHp,u.hp+20);
+    }
+  }
+  updateHUD();
+  if(owner==='you'){
+    log(`── ターン${S.turn} 自軍フェイズ (収入 +${inc} CP) ──`,'you');
+    S.busy=false;
+  }else{
+    log(`── 敵AIフェイズ (収入 +${inc} CP) ──`,'foe');
+    S.busy=true;
+    clearSel();
+    setTimeout(enemyTurn, 420);
+  }
+}
+function endTurn(){
+  if(S.over||S.busy||S.phase!=='you')return;
+  clearSel();
+  startPhase('foe');
+}
+function nextPlayerTurn(){
+  S.turn++;
+  startPhase('you');
+}
+
+/* ===================== 敵AI ===================== */
+function enemyTurn(){
+  // 生産
+  enemyProduce();
+  // 各ユニットを順に行動（簡易ヒューリスティック）
+  const acting=S.units.filter(u=>u.owner==='foe'&&u.hp>0);
+  let i=0;
+  function step(){
+    if(S.over)return;
+    if(i>=acting.length){ // 終了
+      S.busy=false;
+      nextPlayerTurn();
+      return;
+    }
+    const u=acting[i++];
+    if(u.hp<=0){step();return;}
+    enemyActUnit(u);
+    draw();
+    setTimeout(step, 230);
+  }
+  setTimeout(step, 300);
+}
+function enemyProduce(){
+  // 敵の生産: 空いている自拠点で。盤面が溢れないよう総数上限と確率を設定
+  const CAP=11; // 敵ユニット総数の目安
+  let alive=S.units.filter(u=>u.owner==='foe'&&u.hp>0).length;
+  const nodes=S.tiles.filter(t=>t.owner==='foe'&&TERRAIN[t.t].isNode&&!unitAt(t.x,t.y));
+  for(const t of nodes){
+    if(alive>=CAP) break;
+    if(Math.random()<0.35) continue; // 毎ターン全拠点で出さない
+    // 確率で生産。AIっぽく構成を意識
+    const roll=Math.random();
+    let pick;
+    if(roll<0.42) pick='bot';
+    else if(roll<0.66) pick='worm';
+    else if(roll<0.80) pick='firewall';
+    else if(roll<0.90) pick='jammer';
+    else if(roll<0.97) pick='cracker';
+    else pick='drone';
+    const d=UNITS[pick];
+    if(S.cp.foe>=d.cost){
+      S.cp.foe-=d.cost;
+      const nu=mkUnit(S.uid++,pick,'foe',t.x,t.y);
+      nu.moved=true;nu.acted=true; // 生産直後は行動不可
+      S.units.push(nu);
+      alive++;
+      log(`${ownTag('foe')} ${d.name} を生産`,'foe');
+    }
+  }
+  updateHUD();
+}
+function enemyActUnit(u){
+  const d=UNITS[u.type];
+  S.sel=u; S.reach=computeReach(u);
+  // 目標候補
+  const enemies=S.units.filter(e=>e.owner==='you'&&e.hp>0);
+  // 1) 攻撃できる相手を探す(reach内のどこかから射程に入る)
+  let bestAtk=null;
+  for(const k in S.reach){
+    const x=+k%COLS,y=(+k/COLS)|0;
+    if(unitAt(x,y)&&!(x===u.x&&y===u.y))continue;
+    for(const e of enemies){
+      if(man({x,y},e)<=d.rng){
+        // 予測ダメージ評価
+        const save={x:u.x,y:u.y}; u.x=x;u.y=y;
+        const dmg=damage(u,e); u.x=save.x;u.y=save.y;
+        const kill=dmg>=e.hp?1000:0;
+        const score=dmg+kill - man({x,y},e)*0.1;
+        if(!bestAtk||score>bestAtk.score) bestAtk={x,y,e,score};
+      }
+    }
+  }
+  // クラッカー: 隣の自(敵)コア/拠点で player所有を復号 or 自拠点暗号化、または player拠点を狙う
+  // ボット: 中立/敵(player)拠点の占拠を優先
+  let goalTile=null;
+  if(d.cap){
+    const caps=S.tiles.filter(t=>TERRAIN[t.t].isNode&&t.owner!=='foe'&&t.enc===0);
+    goalTile=nearest(u,caps);
+  }
+  // 行動決定
+  if(bestAtk && (d.cls!=='support' || !goalTile)){
+    moveUnitInstant(u,bestAtk.x,bestAtk.y);
+    if(canHit(u,u.x,u.y,bestAtk.e)) doAttack(u,bestAtk.e);
+  } else if(d.crypto){
+    // クラッカー: player拠点に隣接して復号 → なければplayerコアへ前進
+    const target = pickCryptoGoal(u);
+    if(target){
+      const dest=stepToward(u,target.x,target.y);
+      moveUnitInstant(u,dest.x,dest.y);
+      decryptAdjacent(u);
+    } else {
+      advanceTo(u, playerCore());
+    }
+  } else if(d.cap && goalTile){
+    // ボット: 拠点へ。隣接or上なら占拠
+    if(u.x===goalTile.x&&u.y===goalTile.y){
+      captureTile(u);
+    } else {
+      const dest=stepToward(u,goalTile.x,goalTile.y);
+      moveUnitInstant(u,dest.x,dest.y);
+      if(u.x===goalTile.x&&u.y===goalTile.y) captureTile(u);
+    }
+  } else {
+    // その他: 最寄りのplayerユニット or コアへ前進
+    const tgt = nearestUnit(u,enemies) || playerCore();
+    if(tgt) advanceTo(u,tgt);
+  }
+  u.moved=true;u.acted=true;
+  updateHUD();
+}
+function advanceTo(u,tgt){
+  const dest=stepToward(u,tgt.x,tgt.y);
+  moveUnitInstant(u,dest.x,dest.y);
+  // 移動後攻撃チャンス
+  const d=UNITS[u.type];
+  let tv=null;
+  for(const e of S.units){ if(e.owner==='you'&&e.hp>0&&man(u,e)<=d.rng){tv=e;break;} }
+  if(tv) doAttack(u,tv);
+}
+function pickCryptoGoal(u){
+  // 復号対象(player所有でenc>0)に隣接できる場所、なければplayer拠点(enc>0)を返す
+  const targets=S.tiles.filter(t=>TERRAIN[t.t].isNode&&t.owner==='you'&&t.enc>0);
+  return nearest(u,targets);
+}
+function nearest(u,tiles){
+  let best=null,bd=1e9;
+  for(const t of tiles){const dd=man(u,t); if(dd<bd){bd=dd;best=t;}}
+  return best;
+}
+function nearestUnit(u,arr){
+  let best=null,bd=1e9;
+  for(const e of arr){const dd=man(u,e); if(dd<bd){bd=dd;best=e;}}
+  return best;
+}
+function playerCore(){return S.tiles.find(t=>TERRAIN[t.t].isCore&&t.owner==='you');}
+// reach内で目標に最も近い停止可能マスへ
+function stepToward(u,tx,ty){
+  let best={x:u.x,y:u.y}, bd=Math.abs(u.x-tx)+Math.abs(u.y-ty);
+  for(const k in S.reach){
+    const x=+k%COLS,y=(+k/COLS)|0;
+    if(unitAt(x,y)&&!(x===u.x&&y===u.y))continue;
+    const dd=Math.abs(x-tx)+Math.abs(y-ty);
+    if(dd<bd){bd=dd;best={x,y};}
+  }
+  return best;
+}
+function moveUnitInstant(u,x,y){ u.x=x; u.y=y; }
+
+/* ===================== 入力 ===================== */
+cv.addEventListener('click', e=>{
+  if(S.over||S.busy||S.phase!=='you')return;
+  const r=cv.getBoundingClientRect();
+  const x=Math.floor((e.clientX-r.left)/(r.width/cv.width)/TS);
+  const y=Math.floor((e.clientY-r.top)/(r.height/cv.height)/TS);
+  if(!inB(x,y))return;
+  onClick(x,y);
+});
+cv.addEventListener('contextmenu',e=>{e.preventDefault(); if(!S.busy&&!S.over){clearSel();updateHUD();}});
+
+function onClick(x,y){
+  const t=tileAt(x,y);
+  const u=unitAt(x,y);
+
+  // 行動メニュー待ち(移動後)の場合: 隣接攻撃ターゲット選択
+  if(S.pendUnit){
+    const pu=S.pendUnit;
+    if(u && u.owner==='foe' && canHit(pu,pu.x,pu.y,u)){
+      doAttack(pu,u); finishUnit(pu); return;
+    }
+    // それ以外は何もしない(フッターのボタンで行動)
+    return;
+  }
+
+  // 選択中ユニットがある → 移動 or 攻撃 or 解除
+  if(S.sel){
+    const su=S.sel;
+    // 移動範囲内のマスをクリック → 移動
+    if(S.reach[key(x,y)]!==undefined && !(unitAt(x,y)&&unitAt(x,y)!==su)){
+      animateMove(su,x,y,()=>{ openActionMenu(su); });
+      return;
+    }
+    // 射程内の敵を直接クリック(現在位置から) → 攻撃
+    if(u&&u.owner==='foe'&&canHit(su,su.x,su.y,u)){
+      doAttack(su,u); finishUnit(su); return;
+    }
+    clearSel();
+  }
+
+  // 何も選択していない
+  if(u){
+    if(u.owner==='you'&&!u.acted&&!u.fresh){ selectUnit(u); }
+    else { inspectUnit(u); }
+    return;
+  }
+  // 自拠点クリック → 生産パネル
+  if(TERRAIN[t.t].isNode && t.owner==='you'){
+    S.buildTile=t; renderBuild(t); inspectTile(t);
+  } else {
+    clearSel(); inspectTile(t);
+  }
+}
+
+function selectUnit(u){
+  S.sel=u; S.pendUnit=null; S.buildTile=null;
+  S.reach=computeReach(u);
+  inspectUnit(u);
+  renderBuild(null);
+  updateActionButtons();
+}
+function clearSel(){
+  S.sel=null; S.reach=null; S.pendUnit=null; S.buildTile=null;
+  updateActionButtons();
+  renderBuild(null);
+}
+function animateMove(u,x,y,done){
+  const path=pathTo(u,x,y,S.reach);
+  S.busy=true;
+  let i=0;
+  const sx=u.x, sy=u.y;
+  function next(){
+    if(i>=path.length){ u.x=x; u.y=y; S.busy=false; done&&done(); return; }
+    u.x=path[i].x; u.y=path[i].y; i++;
+    draw();
+    setTimeout(next, 70);
+  }
+  // 開始位置は維持しつつ歩く
+  u.x=sx;u.y=sy; next();
+}
+function openActionMenu(u){
+  u.moved=true;
+  S.pendUnit=u; S.sel=u;
+  S.reach=null;
+  inspectUnit(u);
+  updateActionButtons();
+  log('行動を選択: 攻撃(敵をクリック)/占拠/復号/暗号化/待機','sys');
+  draw();
+}
+function finishUnit(u){
+  u.moved=true;u.acted=true;
+  clearSel();
+  checkWinLose();
+  updateHUD();
+  draw();
+}
+
+/* フッターのアクションボタン */
+function uiAction(kind){
+  const u=S.pendUnit||S.sel;
+  if(!u||u.owner!=='you'||S.phase!=='you')return;
+  const d=UNITS[u.type];
+  if(kind==='wait'){ finishUnit(u); return; }
+  if(kind==='capture'){
+    if(d.cap){ if(captureTile(u)) finishUnit(u); }
+    return;
+  }
+  if(kind==='decrypt'){
+    if(d.crypto){ if(decryptAdjacent(u)) finishUnit(u); }
+    return;
+  }
+  if(kind==='encrypt'){
+    if(d.crypto){ if(encryptAdjacent(u)) finishUnit(u); }
+    return;
+  }
+}
+function updateActionButtons(){
+  const u=S.pendUnit||S.sel;
+  const d=u?UNITS[u.type]:null;
+  const t=u?tileAt(u.x,u.y):null;
+  const show=(id,on)=>{document.getElementById(id).disabled=!on;};
+  // 占拠: cap可能 & 自分以外の拠点上 & enc0
+  show('btnCapture', !!(u&&S.pendUnit&&d.cap&&TERRAIN[t.t].isNode&&t.owner!=='you'&&t.enc===0));
+  // 復号: crypto & 隣に敵/中立のenc>0拠点
+  let canDec=false, canEnc=false;
+  if(u&&d.crypto&&S.pendUnit){
+    for(const [dx,dy] of [[0,0],[1,0],[-1,0],[0,1],[0,-1]]){
+      const tt=tileAt(u.x+dx,u.y+dy); if(!tt||!TERRAIN[tt.t].isNode)continue;
+      if(tt.owner!=='you'&&tt.enc>0)canDec=true;
+      if(tt.owner==='you'&&tt.enc<3)canEnc=true;
+    }
+  }
+  show('btnDecrypt',canDec); show('btnEncrypt',canEnc);
+  show('btnWait', !!(u&&S.pendUnit));
+  document.getElementById('btnEnd').disabled = (S.busy||S.phase!=='you');
+}
+
+/* ===================== 生産 ===================== */
+function renderBuild(t){
+  const box=document.getElementById('build');
+  const title=document.getElementById('buildTitle');
+  box.innerHTML='';
+  if(!t){ title.textContent='生産 (自拠点を選択)'; box.innerHTML='<div style="color:var(--dim);font-size:11px;padding:6px">自分のサーバー拠点をクリックすると生産できます。</div>'; return; }
+  title.textContent='生産 — '+TERRAIN[t.t].name;
+  if(unitAt(t.x,t.y)){ box.innerHTML='<div style="color:var(--redL);font-size:11px;padding:6px">この拠点には既にユニットがいます。</div>'; return; }
+  for(const type of BUILD_ORDER){
+    const d=UNITS[type];
+    const afford=S.cp.you>=d.cost;
+    const card=document.createElement('div');
+    card.className='bcard'+(afford?'':' dis');
+    const c=document.createElement('canvas'); c.width=34;c.height=34;
+    drawUnitSprite(c.getContext('2d'),type,'you',1,1,2);
+    const info=document.createElement('div'); info.className='bi';
+    info.innerHTML=`<div class="bn">${d.name}</div><div class="bd">HP${d.hp} ATK${d.atk} 移動${d.mov} 射程${d.rng}<br>${d.desc}</div>`;
+    const cost=document.createElement('div'); cost.className='bc'; cost.textContent=d.cost+'cp';
+    card.appendChild(c);card.appendChild(info);card.appendChild(cost);
+    if(afford) card.onclick=()=>produce(type,t);
+    box.appendChild(card);
+  }
+}
+function produce(type,t){
+  if(S.phase!=='you'||S.busy)return;
+  const d=UNITS[type];
+  if(S.cp.you<d.cost){log('CPが足りない','sys');return;}
+  if(unitAt(t.x,t.y)){log('拠点にユニットがいる','sys');return;}
+  S.cp.you-=d.cost;
+  const nu=mkUnit(S.uid++,type,'you',t.x,t.y);
+  nu.moved=true;nu.acted=true; // 生産ターンは行動不可
+  S.units.push(nu);
+  log(`${ownTag('you')} ${d.name} を生産 (-${d.cost}cp)`,'you');
+  renderBuild(t); updateHUD(); draw();
+}
+
+/* ===================== HUD / インスペクタ ===================== */
+function updateHUD(){
+  document.getElementById('cpYou').textContent=S.cp.you;
+  document.getElementById('cpFoe').textContent=S.cp.foe;
+  document.getElementById('turnNo').textContent=S.turn;
+  const ph=document.getElementById('phase');
+  if(S.phase==='you'){ph.textContent='自軍フェイズ';ph.className='phase player';}
+  else{ph.textContent='敵AIフェイズ';ph.className='phase enemy';}
+  updateActionButtons();
+}
+function inspectUnit(u){
+  const box=document.getElementById('inspect');
+  const d=UNITS[u.type];
+  const jam=isJammed(u);
+  box.innerHTML=`
+    <div class="uname" style="color:${u.owner==='you'?'var(--cyanL)':'var(--redL)'}">${d.name} <span style="font-size:10px;color:var(--dim)">${u.owner==='you'?'自軍':'敵AI'}</span></div>
+    <div class="hpbar"><i style="width:${Math.round(u.hp/u.maxHp*100)}%;${u.hp/u.maxHp<.35?'background:linear-gradient(90deg,#ff5d6d,#ffb04a)':''}"></i></div>
+    <div class="row"><span>HP</span><b>${u.hp}/${u.maxHp}</b></div>
+    <div class="row"><span>攻撃 / 射程</span><b>${d.atk} / ${d.rng}</b></div>
+    <div class="row"><span>移動 / 種別</span><b>${d.mov} / ${clsJP(d.cls)}</b></div>
+    <div>${d.cap?'<span class="tag">占拠可</span>':''}${d.crypto?'<span class="tag" style="color:#46e08a;border-color:#1f5d3a">暗号戦</span>':''}${d.ew?'<span class="tag" style="color:#ffd24a;border-color:#5a4a1a">電子戦</span>':''}${d.fly?'<span class="tag">飛行</span>':''}${jam?'<span class="tag" style="color:#ffd24a;border-color:#5a4a1a">⚡被妨害</span>':''}</div>
+    <div style="font-size:10px;color:var(--dim);margin-top:6px;line-height:1.4">${d.desc}</div>`;
+}
+function inspectTile(t){
+  const box=document.getElementById('inspect');
+  const T=TERRAIN[t.t];
+  let own = t.owner==='you'?'自軍':t.owner==='foe'?'敵AI':'中立';
+  box.innerHTML=`
+    <div class="uname">${T.name}</div>
+    <div class="row"><span>所属</span><b style="color:${t.owner==='you'?'var(--cyanL)':t.owner==='foe'?'var(--redL)':'var(--neutral)'}">${own}</b></div>
+    <div class="row"><span>地形防御</span><b>${T.def}%</b></div>
+    ${T.isNode?`<div class="row"><span>収入</span><b>${T.income} cp/T</b></div>`:''}
+    ${T.isNode?`<div class="row"><span>暗号化</span><b style="color:${t.enc>0?'#46e08a':'var(--dim)'}">Lv ${t.enc}</b></div>`:''}
+    ${T.isNode&&t.owner!=='you'?`<div class="row"><span>占拠ゲージ</span><b>${t.cap}/20</b></div>`:''}
+    ${T.isCore?'<div style="font-size:10px;color:var(--gold);margin-top:6px">※ 制圧すると勝敗が決する中枢コア</div>':''}`;
+}
+function clsJP(c){return {soft:'軟',armor:'装甲',cyber:'電脳',air:'飛行',support:'支援'}[c]||c;}
+
+/* ===================== 勝敗 ===================== */
+function checkWinLose(){
+  if(S.over)return;
+  const youCore=S.tiles.find(t=>TERRAIN[t.t].isCore&&t.owner==='you');
+  const foeCore=S.tiles.find(t=>TERRAIN[t.t].isCore&&t.owner==='foe');
+  if(!foeCore){endGame(true);return;}
+  if(!youCore){endGame(false);return;}
+  const foeLeft=S.units.some(u=>u.owner==='foe'&&u.hp>0)||countNodes('foe')>0;
+  const youLeft=S.units.some(u=>u.owner==='you'&&u.hp>0)||countNodes('you')>0;
+  if(!foeLeft){endGame(true);return;}
+  if(!youLeft){endGame(false);return;}
+}
+function endGame(win){
+  if(S.over)return;
+  S.over=true; S.busy=true;
+  const sc=document.getElementById('endScreen');
+  sc.classList.remove('hidden');
+  sc.classList.toggle('win',win); sc.classList.toggle('lose',!win);
+  document.getElementById('endTitle').textContent= win?'MISSION COMPLETE':'SYSTEM DOWN';
+  document.getElementById('endSub').textContent= win?'敵中枢AI KRONOS を制圧した':'自軍中枢が陥落した';
+  document.getElementById('endMsg').innerHTML= win
+    ? `ターン${S.turn}で勝利。暗号と電子戦を制した者が戦場を制する。`
+    : `防衛失敗。クラッカーで自コアを暗号化し、電子戦機で敵の機動を削ぐべきだった。`;
+}
+
+/* ===================== 描画 ===================== */
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);
+  // 背景
+  ctx.fillStyle='#060912'; ctx.fillRect(0,0,cv.width,cv.height);
+  // ジャミング(自軍視点: 敵ジャマー範囲)
+  const jamYou=jamCells('you');   // 自軍に有害
+  const jamFoe=jamCells('foe');   // 敵に有害
+  // タイル
+  for(const t of S.tiles) drawTile(t, jamYou, jamFoe);
+  // 移動範囲ハイライト
+  if(S.reach && S.sel){
+    for(const k in S.reach){
+      const x=+k%COLS,y=(+k/COLS)|0;
+      if(unitAt(x,y)&&unitAt(x,y)!==S.sel)continue;
+      ctx.fillStyle='rgba(42,209,255,0.18)';
+      ctx.fillRect(x*TS,y*TS,TS,TS);
+      ctx.strokeStyle='rgba(42,209,255,0.5)';
+      ctx.strokeRect(x*TS+1.5,y*TS+1.5,TS-3,TS-3);
+    }
+    // 射程内の敵を赤く
+    const d=UNITS[S.sel.type];
+    for(const e of S.units){
+      if(e.owner==='foe'&&e.hp>0){
+        let hit=false;
+        for(const k in S.reach){const x=+k%COLS,y=(+k/COLS)|0; if((!unitAt(x,y)||x===S.sel.x&&y===S.sel.y)&&man({x,y},e)<=d.rng){hit=true;break;}}
+        if(hit){ctx.strokeStyle='rgba(255,77,109,0.85)';ctx.lineWidth=2;ctx.strokeRect(e.x*TS+2,e.y*TS+2,TS-4,TS-4);ctx.lineWidth=1;}
+      }
+    }
+  }
+  // pendUnit(行動中)の射程内の敵を強調
+  if(S.pendUnit){
+    const u=S.pendUnit,d=UNITS[u.type];
+    for(const e of S.units){ if(e.owner==='foe'&&e.hp>0&&man(u,e)<=d.rng){
+      ctx.strokeStyle='rgba(255,77,109,0.9)';ctx.lineWidth=2;ctx.strokeRect(e.x*TS+2,e.y*TS+2,TS-4,TS-4);ctx.lineWidth=1;
+    }}
+  }
+  // ユニット
+  for(const u of S.units){ if(u.hp>0) drawUnitOnMap(u); }
+  // 選択枠
+  const selU=S.pendUnit||S.sel;
+  if(selU&&selU.hp>0){
+    const p=2+Math.sin(anim.t/180)*1.5;
+    ctx.strokeStyle='#ffd24a';ctx.lineWidth=2;
+    ctx.strokeRect(selU.x*TS+p,selU.y*TS+p,TS-p*2,TS-p*2);ctx.lineWidth=1;
+  }
+  // エフェクト・フロートテキスト
+  drawFx();
+  drawFloats();
+  // スキャンライン
+  drawScanlines();
+}
+function drawTile(t, jamYou, jamFoe){
+  const T=TERRAIN[t.t];
+  const x=t.x*TS, y=t.y*TS;
+  ctx.fillStyle=T.base; ctx.fillRect(x,y,TS,TS);
+  // グリッド
+  ctx.strokeStyle=T.grid; ctx.strokeRect(x+0.5,y+0.5,TS-1,TS-1);
+  // 地形ドット模様
+  if(t.t==='wall'){
+    ctx.fillStyle='#5a2a3c';
+    for(let r=0;r<4;r++)for(let c=0;c<4;c++){ if((r+c)%2===0){ctx.fillRect(x+4+c*9,y+4+r*9,8,8);} }
+    ctx.strokeStyle='#7a3a50';ctx.strokeRect(x+3.5,y+3.5,TS-7,TS-7);
+  } else if(t.t==='relay'){
+    ctx.strokeStyle='#3a5d8f';
+    ctx.beginPath();ctx.moveTo(x+8,y+TS-8);ctx.lineTo(x+TS/2,y+8);ctx.lineTo(x+TS-8,y+TS-8);ctx.stroke();
+    ctx.fillStyle='#27406b';ctx.fillRect(x+TS/2-2,y+TS/2-2,4,4);
+  } else if(t.t==='net'){
+    ctx.fillStyle='rgba(40,80,140,0.25)';
+    ctx.fillRect(x+TS/2-1,y+TS/2-1,2,2);
+  }
+  // 拠点
+  if(T.isNode){
+    const col = t.owner?PAL[t.owner]:PAL.neutral;
+    // 拠点の筐体(サーバーラック風)
+    const bx=x+8,by=y+8,bw=TS-16,bh=TS-16;
+    ctx.fillStyle=col.dark; ctx.fillRect(bx,by,bw,bh);
+    ctx.strokeStyle=col.main; ctx.strokeRect(bx+0.5,by+0.5,bw-1,bh-1);
+    // ラックのスリット
+    ctx.fillStyle=col.main;
+    for(let i=0;i<3;i++){ ctx.fillRect(bx+3, by+4+i*6, bw-6, 2); }
+    // コアは大きめ＋王冠マーク
+    if(T.isCore){
+      ctx.fillStyle=col.light;
+      ctx.fillRect(x+TS/2-3,y+TS/2-3,6,6);
+      ctx.fillStyle='#ffd24a';
+      ctx.fillRect(x+TS/2-6,y+5,12,3);
+    }
+    // 暗号化バッジ
+    if(t.enc>0){
+      ctx.fillStyle='rgba(8,18,12,0.82)';
+      ctx.fillRect(x+TS-15,y+3,12,12);
+      ctx.strokeStyle='#46e08a';ctx.strokeRect(x+TS-15.5,y+2.5,12,12);
+      // 鍵マーク
+      ctx.fillStyle='#46e08a';
+      ctx.fillRect(x+TS-11,y+8,4,5);
+      ctx.strokeStyle='#46e08a';ctx.beginPath();ctx.arc(x+TS-9,y+7,2,Math.PI,0);ctx.stroke();
+      ctx.fillStyle='#9bffc8';ctx.font='7px monospace';ctx.fillText(t.enc,x+TS-13,y+7.5);
+    }
+    // 占拠ゲージ(攻防中)
+    if(t.cap<20 && t.owner!==null){
+      ctx.fillStyle='#0a0f1c';ctx.fillRect(x+6,y+TS-6,TS-12,3);
+      ctx.fillStyle=t.capBy==='you'?'#2ad1ff':'#ff4d6d';
+      ctx.fillRect(x+6,y+TS-6,(TS-12)*(1-t.cap/20),3);
+    }
+  }
+  // ジャミングオーバーレイ
+  const k=key(t.x,t.y);
+  if(jamYou.has(k)||jamFoe.has(k)){
+    const flick=0.10+Math.abs(Math.sin((anim.t+t.x*40+t.y*30)/260))*0.12;
+    ctx.fillStyle=`rgba(255,210,74,${flick})`;
+    ctx.fillRect(x,y,TS,TS);
+    if(((t.x+t.y+Math.floor(anim.t/120))%2)===0){
+      ctx.strokeStyle=`rgba(255,210,74,0.18)`;
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+TS,y+TS);ctx.stroke();
+    }
+  }
+}
+
+/* ---- ユニット描画(マップ上) ---- */
+function drawUnitOnMap(u){
+  const x=u.x*TS, y=u.y*TS;
+  // 影
+  ctx.fillStyle='rgba(0,0,0,0.35)';
+  ctx.beginPath();ctx.ellipse(x+TS/2,y+TS-7,12,4,0,0,Math.PI*2);ctx.fill();
+  drawUnitSprite(ctx, u.type, u.owner, x+TS/2-11, y+6, 1.0, u);
+  // HPバー
+  const ratio=u.hp/u.maxHp;
+  if(ratio<1){
+    ctx.fillStyle='#0a0f1c';ctx.fillRect(x+7,y+TS-5,TS-14,3);
+    ctx.fillStyle= ratio>0.5?'#46e08a':ratio>0.25?'#ffd24a':'#ff5d6d';
+    ctx.fillRect(x+7,y+TS-5,(TS-14)*ratio,3);
+  }
+  // 行動済みは暗く
+  if(u.owner==='you'&&(u.acted||u.fresh)&&S.phase==='you'){
+    ctx.fillStyle='rgba(6,9,18,0.45)';ctx.fillRect(x+2,y+2,TS-4,TS-4);
+  }
+}
+
+/* ---- ドット絵スプライト ---- *
+   22x22程度のピクセルパターンをコードで描画。陣営でmain/lightを差し替え。 */
+function drawUnitSprite(c, type, owner, ox, oy, scale, u){
+  const col = PAL[owner]||PAL.neutral;
+  const P={ '.':null, o:'#0a0e18', m:col.main, l:col.light, d:col.dark,
+            w:'#eaf6ff', k:'#0a0e18',
+            g:type==='cracker'?'#46e08a':type==='jammer'?'#ffd24a':type==='drone'?'#b78aff':col.light };
+  const sp=SPRITES[type]||SPRITES.bot;
+  const px=2*scale;
+  for(let r=0;r<sp.length;r++){
+    const row=sp[r];
+    for(let cc=0;cc<row.length;cc++){
+      const ch=row[cc]; const color=P[ch];
+      if(!color)continue;
+      c.fillStyle=color;
+      c.fillRect(Math.round(ox+cc*px), Math.round(oy+r*px), Math.ceil(px), Math.ceil(px));
+    }
+  }
+}
+
+/* 11x11ドットパターン (px=2 → 22x22表示) */
+const SPRITES={
+  bot:[
+    "...ooooo...",
+    "..ommmmmo..",
+    "..omwwwmo..",
+    "..omwkwmo..",
+    "..ommmmmo..",
+    "...ooooo...",
+    "..ommmmmo..",
+    ".om.mmm.mo.",
+    ".oo.ooo.oo.",
+    "....m.m....",
+    "...oo.oo...",
+  ],
+  worm:[
+    "...........",
+    ".oo........",
+    "ommmo......",
+    "omwkmo.....",
+    ".ommmmo....",
+    "...ommmo...",
+    "....ommmo..",
+    ".....ommmo.",
+    "......ommmo",
+    ".......ommm",
+    "........ooo",
+  ],
+  firewall:[
+    ".ooooooooo.",
+    ".omdmdmdmo.",
+    ".odmdmdmdo.",
+    ".omdmdmdmo.",
+    ".odmdmdmdo.",
+    ".ommmmmmmo.",
+    ".omwwwwwmo.",
+    ".omwkkkwmo.",
+    ".ommmmmmmo.",
+    ".ooooooooo.",
+    "...........",
+  ],
+  jammer:[
+    ".....g.....",
+    "....ogo....",
+    "...o.g.o...",
+    "..og.g.go..",
+    ".og..g..go.",
+    "...omgmo...",
+    "..ommgmmo..",
+    "..omwkwmo..",
+    "..ommmmmo..",
+    "...o...o...",
+    "..oo...oo..",
+  ],
+  cracker:[
+    "..ooooooo..",
+    ".ogggggggo.",
+    ".ogkggkggo.",
+    ".ogggggggo.",
+    ".ogkgggkgo.",
+    ".oggkkkggo.",
+    ".ommmmmmmo.",
+    "..ommmmmo..",
+    "..om.m.mo..",
+    "..oo.o.oo..",
+    "...........",
+  ],
+  drone:[
+    "g.o.....o.g",
+    "ogo.....ogo",
+    ".o..ooo..o.",
+    "....omo....",
+    "...ommmo...",
+    "..ommwmmo..",
+    "..omwgwmo..",
+    "..ommmmmo..",
+    "...ooooo...",
+    "...o...o...",
+    "..o.....o..",
+  ],
+};
+
+/* ---- フロートテキスト/エフェクト ---- */
+function spawnFloat(tx,ty,text,color){
+  anim.floats.push({x:tx*TS+TS/2, y:ty*TS+10, text, color, life:60});
+}
+function drawFloats(){
+  ctx.textAlign='center'; ctx.font='bold 12px monospace';
+  for(const f of anim.floats){
+    ctx.globalAlpha=Math.min(1,f.life/40);
+    ctx.fillStyle='#000'; ctx.fillText(f.text,f.x+1,f.y+1);
+    ctx.fillStyle=f.color; ctx.fillText(f.text,f.x,f.y);
+    ctx.globalAlpha=1;
+  }
+  ctx.textAlign='start';
+}
+function spawnFx(ax,ay,bx,by){
+  anim.fx.push({ax:ax*TS+TS/2,ay:ay*TS+TS/2,bx:bx*TS+TS/2,by:by*TS+TS/2,life:14});
+}
+function drawFx(){
+  for(const f of anim.fx){
+    ctx.globalAlpha=f.life/14;
+    ctx.strokeStyle='#fff3c0';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(f.ax,f.ay);ctx.lineTo(f.bx,f.by);ctx.stroke();
+    ctx.fillStyle='#fff3c0';
+    for(let i=0;i<3;i++){ctx.fillRect(f.bx+(Math.random()*16-8),f.by+(Math.random()*16-8),2,2);}
+    ctx.lineWidth=1;ctx.globalAlpha=1;
+  }
+}
+function drawScanlines(){
+  ctx.globalAlpha=0.05; ctx.fillStyle='#000';
+  for(let y=0;y<cv.height;y+=3) ctx.fillRect(0,y,cv.width,1);
+  ctx.globalAlpha=1;
+}
+
+/* ---- アニメループ ---- */
+function loop(ts){
+  anim.t=ts;
+  // フロート/FX更新
+  for(const f of anim.floats){f.y-=0.4;f.life--;}
+  anim.floats=anim.floats.filter(f=>f.life>0);
+  for(const f of anim.fx)f.life--;
+  anim.fx=anim.fx.filter(f=>f.life>0);
+  if(S&&!S.over) draw();
+  else if(S) draw();
+  requestAnimationFrame(loop);
+}
+
+/* ===================== ゲーム制御 ===================== */
+const Game={
+  start(){
+    document.getElementById('titleScreen').classList.add('hidden');
+    document.getElementById('endScreen').classList.add('hidden');
+    document.getElementById('log').innerHTML='';
+    S=buildState();
+    log('作戦開始。敵中枢AI <span style="color:#ffb3c2">KRONOS</span> は3重に暗号化されている。','sys');
+    log('クラッカーで復号 → ボットで占拠せよ。','cr');
+    updateHUD();
+    renderBuild(null);
+    startPhase('you'); // turn1, you
+    // 開始時は収入を二重に与えないよう turn1初期CPはbuildStateで設定済→startPhaseで加算
+    draw();
+  },
+  endTurn, uiAction,
+};
+window.Game=Game;
+
+// 起動
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
