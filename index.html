@@ -27,7 +27,7 @@
   #main{display:flex;flex:1 1 auto;min-height:0}
   #stage{position:relative;flex:1 1 auto;display:flex;align-items:center;justify-content:center;background:
      radial-gradient(circle at 50% 40%,#0c1832 0%,#060912 70%);overflow:hidden}
-  canvas{image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 0 0 1px var(--line),0 8px 40px rgba(0,0,0,.6)}
+  canvas{image-rendering:pixelated;image-rendering:crisp-edges;box-shadow:0 0 0 1px var(--line),0 8px 40px rgba(0,0,0,.6);max-width:100%;height:auto;touch-action:manipulation}
   #side{flex:0 0 268px;background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
   .sectitle{font-size:10px;letter-spacing:3px;color:var(--dim);padding:8px 12px 4px;border-bottom:1px solid var(--line)}
   #inspect{padding:10px 12px;min-height:128px;border-bottom:1px solid var(--line)}
@@ -74,6 +74,29 @@
   ::-webkit-scrollbar{width:9px;height:9px}
   ::-webkit-scrollbar-thumb{background:#1d2f52;border-radius:4px}
   ::-webkit-scrollbar-track{background:transparent}
+
+  /* ===== モバイル / 縦長画面: 縦積みレイアウト ===== */
+  @media (max-width: 880px){
+    html,body{overflow:auto;height:auto}
+    #wrap{height:auto;min-height:100vh}
+    #main{flex-direction:column}
+    #stage{flex:0 0 auto;overflow:visible;padding:6px;width:100%}
+    #stage canvas{width:100%;max-width:100%;height:auto;display:block}
+    #side{flex:1 1 auto;width:100%;border-left:none;border-top:1px solid var(--line)}
+    #inspect{min-height:0}
+    #log{flex:0 0 120px}
+    header{flex-wrap:wrap;gap:8px 14px;padding:6px 10px}
+    header h1{font-size:15px;flex-basis:100%}
+    footer{flex-wrap:wrap;gap:6px;position:sticky;bottom:0;z-index:5}
+    footer .hint{display:none}
+    button.act{flex:1 1 auto;min-width:74px;padding:9px 8px;text-align:center}
+    button.act#btnEnd{flex-basis:100%}
+    /* タイトル/結果画面は画面全体を覆い、スクロール可能に */
+    .screen{position:fixed;inset:0;overflow-y:auto;justify-content:flex-start;padding:18px 18px 40px}
+    .screen h2{font-size:26px;letter-spacing:5px;margin-top:6px}
+    .screen p{font-size:13px;line-height:1.85}
+    .screen button{position:sticky;bottom:6px}
+  }
 </style>
 </head>
 <body>
